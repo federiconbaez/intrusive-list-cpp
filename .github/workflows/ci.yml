@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} ${{ matrix.cxx }} ${{ matrix.sanitize || 'release' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        cxx: [g++, clang++]
+        sanitize: ["address,undefined", "thread", ""]
+        include:
+          - os: ubuntu-24.04-arm
+            cxx: g++
+            sanitize: "address,undefined"
+    steps:
+      - uses: actions/checkout@v5
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
+      - name: TSan needs fewer ASLR bits on recent kernels
+        if: matrix.sanitize == 'thread'
+        run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: Configure
+        run: >
+          CXX=${{ matrix.cxx }} cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.sanitize && 'Debug' || 'Release' }}
+          -DILIST_SANITIZE=${{ matrix.sanitize }}
+      - run: cmake --build build
+      - run: ctest --test-dir build --output-on-failure
+      - name: Bench (informational)
+        if: matrix.sanitize == ''
+        run: ./build/bench_list
