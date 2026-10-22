@@ -327,7 +327,7 @@ static void test_safe_mode_aborts_on_linked_destruction() {
   pid_t pid = fork();
   if (pid == 0) {
     // Silence the expected message in the child.
-    std::freopen("/dev/null", "w", stderr);
+    if (std::freopen("/dev/null", "w", stderr) == nullptr) _exit(2);
     nlist l;
     {
       node n(1);
