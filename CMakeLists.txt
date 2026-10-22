@@ -20,3 +20,6 @@ add_executable(test_list tests/test_list.cpp)
 target_link_libraries(test_list PRIVATE ilist Threads::Threads)
 target_compile_options(test_list PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Werror)
 add_test(NAME list COMMAND test_list)
+
+add_executable(bench_list bench/bench.cpp)
+target_link_libraries(bench_list PRIVATE ilist)
